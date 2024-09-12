@@ -196,7 +196,7 @@ class mySlave():
         command=cmd_from_gui# acsiiCommandsback[5]
         res=self.ascii_to_hex(command)
         res_clean=res.split('\n')
-       # self.readSDO(0x6123,0)
+        self.readSDO(0x6041,0)
 
         self.writeSDO(0x20E0,2,1)
         commandlength=len(command)+2
