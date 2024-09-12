@@ -3,7 +3,7 @@
 import tkinter as tk
 from threading import Thread
 from ecat_slave import Master  # Import the Master class from ethercat.py
-
+#change for example
 def on_enter_pressed(event):
     user_input = entry.get()
     if user_input:
