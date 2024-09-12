@@ -1,0 +1,11 @@
+PyQt6
+pysoem
+pyserial
+canlib
+canopen
+cython
+pyinstaller
+configparser
+PyYAML
+pywin32
+
