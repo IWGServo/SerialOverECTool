@@ -27,6 +27,7 @@ class StateMachine():
 class Master(pysoem.Master):
     _nic_name = None
     mySlaves = []
+
     def __init__(self) -> None:
         self.connection_status = False
         self.device_count = 0
@@ -34,23 +35,40 @@ class Master(pysoem.Master):
 
         if not self._nic_name:
             for nic in pysoem.find_adapters():
-                print(nic.desc)
-                if(nic.desc.decode('utf-8')!="TwinCAT-Intel PCI Ethernet Adapter (Gigabit) V2"):
-                    continue
+                # Ensure nic.desc is handled correctly
+                if isinstance(nic.desc, bytes):
+                    nic_desc = nic.desc.decode('utf-8')  # Decode only if it is bytes
+                else:
+                    nic_desc = nic.desc  # If it's already a string, just use it
+
+                print(f"Found adapter: {nic_desc}")  # Print the description
+                
+                # Check if the adapter matches
+                if nic_desc != "TwinCAT-Intel PCI Ethernet Adapter (Gigabit) V2":
+                    print(f"Skipping {nic_desc}...")
+                    continue  # Skip to the next adapter if it does not match
+
+                # If the adapter matches, proceed to open it
+                print(f"Connecting to {nic.name}...")
                 self.open(nic.name)
                 self.device_count = self.config_init()
                 if self.device_count > 0:
                     self._nic_name = nic.name
                     self.connection_status = True
                     break
-                else: self.close()
-        else: 
+                else:
+                    self.close()
+
+        # If _nic_name is already set, attempt to reconnect
+        if self._nic_name:
+            print(f"Reconnecting to {self._nic_name}...")
             self.open(self._nic_name)
             self.device_count = self.config_init()
 
         if self.connection_status:
-            print(f'Connected {self._nic_name}')
-        else:print('No slave found')
+            print(f'Connected to {self._nic_name}')
+        else:
+            print('No slave found')
 
     def setUpSlaves(self):
         for i,slave in enumerate(self.slaves):
