@@ -34,7 +34,8 @@ class Master(pysoem.Master):
 
         if not self._nic_name:
             for nic in pysoem.find_adapters():
-                if(nic.desc!="TwinCAT-Intel PCI Ethernet Adapter (Gigabit) V2"):
+                print(nic.desc)
+                if(nic.desc.decode('utf-8')!="TwinCAT-Intel PCI Ethernet Adapter (Gigabit) V2"):
                     continue
                 self.open(nic.name)
                 self.device_count = self.config_init()
@@ -159,15 +160,37 @@ class mySlave():
 
     def writeSDO(self, index, subindex, value)->bool:  # Read & Decode SDO from slave
         # data from dictionary for decoding
+        counter=0
         data_type, bit_length = self._sdo_data_from_od(index, subindex)
         # data to binary
+
+        try: self.slaveObject.sdo_write(index, subindex, value.encode('utf-8').hex()) # type: ignore
+        except:
+            counter=1; 
+            pass
         binary_data = self._convert_to_binary(value, data_type, bit_length)
         # Write SDO
         try: self.slaveObject.sdo_write(index, subindex, binary_data) # type: ignore
-        except pysoem.SdoError: return False # type: ignore
+        except pysoem.SdoError as e: return False # type: ignore
         else: return True
-       
-   
+    def writeSDOCMD(self, index, subindex, value)->bool:  # Read & Decode SDO from slave
+        # data from dictionary for decoding
+        counter=0
+        data_type, bit_length = self._sdo_data_from_od(index, subindex)
+        # data to binary
+        print((value+'\r\n').encode('ascii'))
+        try: self.slaveObject.sdo_write(index, subindex, (value+'\n'+'\0').encode('ascii'))
+        except pysoem.SdoError as e: return False # type: ignore
+        else: return True
+    def readSDOCMD(self, index, subindex)->bool:  # Read & Decode SDO from slave
+        # data from dictionary for decoding
+        counter=0
+        data_type, bit_length = self._sdo_data_from_od(index, subindex)
+        # data to binary
+
+        try: return self.slaveObject.sdo_read(index, subindex)
+        except pysoem.SdoError as e: return False # type: ignore
+
     def ascii_to_hex(self,command):
         input_str = command
         hex_value = ""
@@ -194,16 +217,19 @@ class mySlave():
     def test_SerialOverEcat(self,cmd_from_gui):
         #acsiiCommandsback=['l3kv','getall','en','dis','operationmode','record 1 1000 PWMMtuPeriod cciq ccid','rectrig','recget']
         command=cmd_from_gui# acsiiCommandsback[5]
-        res=self.ascii_to_hex(command)
-        res_clean=res.split('\n')
-        self.readSDO(0x6041,0)
-
-        self.writeSDO(0x20E0,2,1)
-        commandlength=len(command)+2
-        for chunk in res_clean:
-            data_int = int(chunk, 16)
-            self.writeSDO(0x20e0, 1, data_int)
-            #ph.write_sdo(0x20E0,1,hex(chunk))
+        # res=self.ascii_to_hex(command)
+        # res_clean=res.split('\n')
+        self.writeSDO(0x20E0,2,1) #enables the Serial over Ecat
+        self.writeSDOCMD(0x20E2,0,command)
+        ans=self.readSDOCMD(0x20E2,0)
+        print(ans)
+        # self.writeSDO(0x20E2,0,1)
+        # self.writeSDO(0x20E2,0,1)
+        # commandlength=len(command)+2
+        # for chunk in res_clean:
+        #     data_int = int(chunk, 16)
+        #     self.writeSDO(0x20e0, 1, data_int)
+        #     #ph.write_sdo(0x20E0,1,hex(chunk))
         array=[]
         totalString=''
         ascii_string=''
@@ -273,30 +299,34 @@ class mySlave():
         #     self.writeSDO(0x20e0, 1, data_int)
         #     #ph.write_sdo(0x20E0,1,hex(chunk))
         # array=[]
-        # totalString=''
+        totalString=''
         # ascii_string=''
         # counter=0
         while '0>>>>' not in totalString: # and counter<512:
             timecap=time.time()
-            res=str(hex(self.readSDO(0x20E0,1)))[2:]
-            #print(res)
-            #print(res)
-            length = int(res[:1], 16)
-            res=res[1:]
+            try:
+                # time.sleep(0.002)
+                res=self.readSDO(0x20E1,0) #str(hex(self.readSDO(0x20E0,1)))[2:]
+                print(res)
+            except:
+                continue
+            # #print(res)
+            # length = int(res[:1], 16)
+            # res=res[1:]
 
-            # Splitting the string into sets of characters
-            sets_of_chars = [res[i:i+2] for i in range(0, len(res), 2)]
-            # ascii_chars = [chr(int(char, 16)) for char in sets_of_chars]
-            ascii_string = ''.join([chr(int(char, 16)) for char in sets_of_chars])
-            #print(ascii_string)
-            if(ascii_string=='IsRemoteEnInput'):
-                counter+=1
-            ascii_string_clean = ascii_string.replace("\x00", "")
-            totalString+=ascii_string_clean
+            # # Splitting the string into sets of characters
+            # sets_of_chars = [res[i:i+2] for i in range(0, len(res), 2)]
+            # # ascii_chars = [chr(int(char, 16)) for char in sets_of_chars]
+            # ascii_string = ''.join([chr(int(char, 16)) for char in sets_of_chars])
+            # #print(ascii_string)
+            # if(ascii_string=='IsRemoteEnInput'):
+            #     counter+=1
+            # ascii_string_clean = ascii_string.replace("\x00", "")
+            totalString+=res
             
-            if('>>>' in totalString):
-                break
-            counter+=1
+            # if('>>>' in totalString):
+            #     break
+            # counter+=1
 
 
 

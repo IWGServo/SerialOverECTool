@@ -30,10 +30,16 @@ def run_gui():
     # Set up the main window
     root = tk.Tk()
     root.title("Simple Terminal")
+    # Set up the frame for text_area and scrollbar
+    frame = tk.Frame(root)
+    frame.pack(pady=10)
+    scrollbar = tk.Scrollbar(frame)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-    # Set up the text area (output)     
-    text_area = tk.Text(root, height=20, width=150)
-    text_area.pack(pady=10)
+    # Set up the text area (output) and link the scrollbar
+    text_area = tk.Text(frame, height=40, width=150, yscrollcommand=scrollbar.set)
+    text_area.pack(side=tk.LEFT)
+    scrollbar.config(command=text_area.yview)
     button = tk.Button(root, text="Close Com", command=close_com)
     button.pack(pady=5)
     # Set up the entry widget (input)
