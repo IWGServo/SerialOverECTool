@@ -51,7 +51,7 @@ def setup_master():
     # Create the master instance
     master = Master()
     while not master.connection_status:
-        master = Master()  # Recreate the master if connection fails
+        master.connectSlaves()  # Recreate the master if connection fails
     master.setUpSlaves()
 
 if __name__ == "__main__":
