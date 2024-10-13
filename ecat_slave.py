@@ -33,42 +33,18 @@ class Master(pysoem.Master):
         self.device_count = 0
         super().__init__()
 
-        if not self._nic_name:
-            for nic in pysoem.find_adapters():
-                # Ensure nic.desc is handled correctly
-                if isinstance(nic.desc, bytes):
-                    nic_desc = nic.desc.decode('utf-8')  # Decode only if it is bytes
-                else:
-                    nic_desc = nic.desc  # If it's already a string, just use it
-
-                print(f"Found adapter: {nic_desc}")  # Print the description
-                
-                # Check if the adapter matches
-                if nic_desc != "TwinCAT-Intel PCI Ethernet Adapter (Gigabit) V2":
-                    print(f"Skipping {nic_desc}...")
-                    continue  # Skip to the next adapter if it does not match
-
-                # If the adapter matches, proceed to open it
-                print(f"Connecting to {nic.name}...")
-                self.open(nic.name)
-                self.device_count = self.config_init()
-                if self.device_count > 0:
-                    self._nic_name = nic.name
-                    self.connection_status = True
-                    break
-                else:
-                    self.close()
-
-        # If _nic_name is already set, attempt to reconnect
-        if self._nic_name:
-            print(f"Reconnecting to {self._nic_name}...")
-            self.open(self._nic_name)
+        for nic in pysoem.find_adapters():            
+            # If the adapter matches, proceed to open it
+            print(f"Searching slaves on {nic.name}...")
+            self.open(nic.name)
             self.device_count = self.config_init()
-
-        if self.connection_status:
-            print(f'Connected to {self._nic_name}')
-        else:
-            print('No slave found')
+            if self.device_count > 0:
+                self.connection_status = True
+                print(f"Connected on {nic.name} to {self.device_count} slaves")
+                break
+            else:
+                print(f"no slaves on {nic.name}, next ...")
+                self.close()
 
     def setUpSlaves(self):
         for i,slave in enumerate(self.slaves):
