@@ -32,7 +32,8 @@ class Master(pysoem.Master):
         self.connection_status = False
         self.device_count = 0
         super().__init__()
-
+    
+    def connectSlaves(self)->None:
         for nic in pysoem.find_adapters():            
             # If the adapter matches, proceed to open it
             print(f"Searching slaves on {nic.name}...")
